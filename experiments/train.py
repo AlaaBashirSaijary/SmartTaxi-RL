@@ -10,7 +10,7 @@ RESULTS = Path(__file__).resolve().parents[1] / "results"
 
 
 def train(episodes=30000, seed=42, alpha=0.1, gamma=0.95, epsilon_decay=0.999,
-          tag="", save=True):
+          tag="", save=True, on_progress=None):
     RESULTS.mkdir(exist_ok=True)
     env = SmartTaxiEnv(seed=seed)
     agent = QLearningAgent(env.num_states, env.NUM_ACTIONS, alpha=alpha, gamma=gamma,
@@ -35,6 +35,8 @@ def train(episodes=30000, seed=42, alpha=0.1, gamma=0.95, epsilon_decay=0.999,
                      "epsilon": round(agent.epsilon, 4),
                      "q_tracked": agent.q_table[tracked_s, tracked_a],
                      "q_mean_max": agent.q_table.max(axis=1).mean()})
+        if on_progress and ep % 250 == 0:
+            on_progress(ep, episodes)
         if ep % max(1, episodes // 10) == 0:
             last = rows[-200:]
             print(f"ep {ep:6d} | eps {agent.epsilon:.3f} | "
