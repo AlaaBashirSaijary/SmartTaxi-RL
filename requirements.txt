@@ -1,4 +1,6 @@
 numpy
 matplotlib
 pandas
-pygame
+streamlit
+arabic-reshaper
+python-bidi

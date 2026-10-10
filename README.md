@@ -9,7 +9,8 @@ python -m experiments.evaluate       # greedy Q agent vs random agent, 500 ident
 python -m experiments.sweep          # alpha / gamma / epsilon-decay study (3 seeds)
 python -m experiments.plot_results   # figures in results/
 python -m experiments.explain_q      # one Q update printed with real numbers
-python main.py                       # Pygame viewer (SPACE run, N step, R new task, arrows/P/D manual)
+python main.py                       # Pygame viewer (needs pygame: pip install -r requirements-desktop.txt)
+streamlit run app.py                 # web app
 ```
 
 Presentation: `presentation/SmartTaxi_RL_Presentation.pptx` (rebuild with `node presentation/build_deck.js`, needs `pptxgenjs`).

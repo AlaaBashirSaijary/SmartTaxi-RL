@@ -3,6 +3,8 @@ const path = require("path");
 const SK = "/root/.claude/skills/synced/6980f3d7-ebe2-4cff-8f69-1d30e4198671_0ae9443a-e405-42da-8fd4-dc5233dcb94b/pptx";
 const { applyTheme } = require(SK + "/scripts/apply_theme.js");
 const RES = path.resolve(__dirname, "../results");
+const TRACE = JSON.parse(require("fs").readFileSync(path.join(RES, "trace.json"), "utf8"));
+const AR_ACT = ["أعلى", "أسفل", "يمين", "يسار", "التقاط", "إنزال"];
 
 const THEME = {
   name: "SmartTaxi", headFontFace: "Arial", bodyFontFace: "Arial",
@@ -118,6 +120,22 @@ rw.forEach((r, i) => {
 s.addText("ملاحظة: كل خطوة تحمل عقوبة الخطوة، فتُجمع مع مكافأة الحدث (التقاط صحيح: 15 − 1 = 14)", rtl({ x: 0.6, y: 6.5, w: 12.1, h: 0.45, fontSize: 14, color: "6B7280" }));
 s.addNotes("المكافآت هي الطريقة الوحيدة التي «نخبر» بها الوكيل عن الهدف. القيم اختيار تصميمي ابتدائي وليست قيمًا مثبتة كأمثل.");
 
+
+// 6b ── How the car moves
+s = pres.addSlide({ masterName: "CONTENT" }); title(s, "كيف تتحرك السيارة؟ (قواعد الخطوة الواحدة)");
+s.addText("المحور x نحو اليمين والمحور y نحو الأسفل. مثال: السيارة عند الخلية (4, 5)", rtl({ x: 0.6, y: 1.4, w: 12.1, h: 0.45, fontSize: 17, bold: true }));
+const mv = [["أعلى", "0", "(0, −1)", "(4, 4)"], ["أسفل", "1", "(0, +1)", "(4, 6)"], ["يمين", "2", "(+1, 0)", "(5, 5)"], ["يسار", "3", "(−1, 0)", "(3, 5)"], ["التقاط", "4", "لا حركة", "ينجح فقط عند الراكب"], ["إنزال", "5", "لا حركة", "ينجح فقط عند الوجهة"]];
+s.addTable([[hdr("الفعل"), hdr("الرقم"), hdr("التغيّر (dx, dy)"), hdr("الموقع الجديد")]].concat(mv.map(r => r.map((c, i) => cell(c, i == 0 ? { bold: true } : {})))),
+  { x: 6.2, y: 2.0, w: 6.55, colW: [1.3, 0.9, 1.9, 2.45], rowH: 0.5, border: { type: "solid", color: "C9D3DD", pt: 1 }, objectName: "MoveTable" });
+const rules = [["الخلية المقصودة حرّة", "تتحرك السيارة إليها", "r = −1", "2EA05A"], ["الخلية عائق أو خارج الخريطة", "تبقى مكانها وتأخذ عقوبة الاصطدام", "r = −1 − 20 = −21", "E8743B"]];
+rules.forEach((r, i) => { const y = 2.0 + i * 1.55; card(s, 0.6, y, 5.3, 1.4, "F1F3F6", "RuleCard"); s.addText(r[0], rtl({ x: 0.8, y: y + 0.1, w: 4.9, h: 0.45, fontSize: 18, bold: true, color: r[3] })); s.addText(r[1], rtl({ x: 0.8, y: y + 0.58, w: 4.9, h: 0.35, fontSize: 16 })); s.addText(r[2], ltr({ x: 0.8, y: y + 0.95, w: 4.9, h: 0.35, fontSize: 17, bold: true, align: "right" })); });
+card(s, 0.6, 5.2, 5.3, 1.4, "0F2A3A", "ExampleCard");
+s.addText("مثال: السيارة عند الخلية (4, 0) وتختار «أعلى»", rtl({ x: 0.8, y: 5.28, w: 4.9, h: 0.4, fontSize: 16, bold: true, color: "FFFFFF" }));
+s.addText("الخلية المقصودة خارج الخريطة، فتبقى مكانها", rtl({ x: 0.8, y: 5.68, w: 4.9, h: 0.4, fontSize: 15, color: "C9D3DD" }));
+s.addText("(4, 0) → (4, 0),   r = −21", ltr({ x: 0.8, y: 6.1, w: 4.9, h: 0.4, fontSize: 18, bold: true, color: "F2B705", align: "right" }));
+s.addText("اختيار الفعل نفسه يأتي من جدول Q: السيارة تنظر إلى صف حالتها وتختار الفعل صاحب أكبر قيمة", rtl({ x: 6.2, y: 5.5, w: 6.55, h: 1.0, fontSize: 17, bold: true, color: "1F6F8B" }));
+s.addNotes("هذه قواعد البيئة (environment/taxi_env.py). لا يوجد تسارع أو اتجاه للسيارة: كل فعل يحرّك خلية واحدة فقط.");
+
 // 7 ── Q formula
 s = pres.addSlide({ masterName: "CONTENT" }); title(s, "معادلة Q-Learning");
 card(s, 0.6, 1.5, 12.1, 1.3, "0F2A3A", "FormulaBox");
@@ -165,6 +183,23 @@ s.addText("ε ← max( 0.05 , ε × 0.999 )", ltr({ x: 0.6, y: 5.05, w: 5.5, h: 
 s.addText("الأزرق: نسبة النجاح (متوسط 100 حلقة)، البرتقالي: قيمة ε، وكلما قلّ الاستكشاف ارتفع النجاح", rtl({ x: 6.4, y: 5.3, w: 6.35, h: 0.8, fontSize: 14, color: "6B7280" }));
 s.addNotes("بدون استكشاف قد يتمسّك الوكيل بأول مسار وجده. بدون استغلال لا يستفيد مما تعلّمه.");
 
+
+// 9b ── epsilon calculation
+s = pres.addSlide({ masterName: "CONTENT" }); title(s, "كيف تُحسب ε وكيف تُستخدم في كل خطوة");
+card(s, 0.6, 1.5, 5.6, 1.2, "0F2A3A", "EpsFormula");
+s.addText("εₙ = max( 0.05 , 0.999ⁿ )", ltr({ x: 0.6, y: 1.5, w: 5.6, h: 1.2, fontSize: 28, bold: true, align: "center", color: "F2B705", fontFace: "Arial" }));
+const epsKeys = Object.keys(TRACE.epsilon).filter(k => +k <= 3000);
+s.addTable([[hdr("الحلقة n"), hdr("ε")]].concat(epsKeys.map(k => [cell(k), cell(String(TRACE.epsilon[k]), { bold: true, color: "E8743B" })])),
+  { x: 0.6, y: 2.9, w: 5.6, colW: [2.8, 2.8], rowH: 0.38, border: { type: "solid", color: "C9D3DD", pt: 1 }, objectName: "EpsTable" });
+const epsX = [], epsY = []; for (let n = 0; n <= 4000; n += 200) { epsX.push(String(n)); epsY.push(+Math.max(0.05, Math.pow(0.999, n)).toFixed(3)); }
+s.addChart(pres.charts.LINE, [{ name: "epsilon", labels: epsX, values: epsY }], {
+  x: 6.5, y: 1.4, w: 6.25, h: 3.8, showTitle: true, title: "epsilon vs training episode", titleFontSize: 14, titleColor: "1B2430", chartColors: ["E8743B"],
+  lineSize: 3, lineDataSymbolSize: 4, catAxisLabelColor: "6B7280", valAxisLabelColor: "6B7280", catAxisLabelFontSize: 11, valAxisLabelFontSize: 12,
+  valGridLine: { color: "E3E7EC", size: 0.75 }, catGridLine: { style: "none" }, showLegend: false, valAxisMinVal: 0, valAxisMaxVal: 1 });
+const dec = [["نسحب عددًا عشوائيًا u بين 0 و1", "مثال عند ε = 0.37 (الحلقة 1000)", "8A8F98"], ["u = 0.21 أصغر من ε", "نستكشف: نختار فعلًا عشوائيًا", "E8743B"], ["u = 0.74 أكبر من ε", "نستغل: نختار الفعل صاحب أكبر Q", "2EA05A"]];
+dec.forEach((d, i) => { const x = 10.1 - i * 3.3; card(s, x, 5.4, 3.1, 1.4, "F1F3F6", "DecisionCard"); s.addText(d[0], rtl({ x: x + 0.15, y: 5.48, w: 2.8, h: 0.6, fontSize: 15, bold: true, color: d[2] })); s.addText(d[1], rtl({ x: x + 0.15, y: 6.1, w: 2.8, h: 0.65, fontSize: 14 })); });
+s.addNotes("ε تتناقص مرة واحدة في نهاية كل حلقة (وليس كل خطوة). عند الحلقة 3000 تصل إلى الحد الأدنى 0.05، أي 5% استكشاف و95% استغلال.");
+
 // 10 ── training loop
 s = pres.addSlide({ masterName: "CONTENT" }); title(s, "حلقة التدريب خطوة بخطوة");
 const st = ["env.reset(): مهمة جديدة (موقع، راكب، وجهة عشوائية)", "اختيار الفعل a بسياسة ε-greedy", "env.step(a) ← الحالة التالية s′ والمكافأة r", "تحديث Q(s,a) بالمعادلة، ثم s ← s′", "نكرّر حتى التوصيل أو 150 خطوة، ثم نخفّض ε"];
@@ -182,6 +217,38 @@ s.addText([
   { text: "  agent.decay_epsilon()", options: {} },
 ], ltr({ x: 0.85, y: 1.7, w: 4.95, h: 4.6, fontSize: 15, fontFace: "Courier New", color: "F2B705", valign: "top" }));
 s.addNotes("هذا هو الكود الفعلي في experiments/train.py. كل تحديث يمس خانة واحدة فقط من الجدول: Q[s, a].");
+
+
+// 10b ── One episode, step by step
+s = pres.addSlide({ masterName: "CONTENT" }); title(s, "جولة واحدة خطوة بخطوة (من جدول Q المدرَّب)");
+s.addText("المهمة: الراكب عند P0 (0,0)، الوجهة D0 (4,0)، والسيارة تبدأ عند (1,0). في كل خطوة تختار أكبر Q في الصف", rtl({ x: 0.6, y: 1.4, w: 12.1, h: 0.45, fontSize: 16, bold: true }));
+const trRows = TRACE.steps.map(t => [cell(String(t.step)), cell(`(${t.before[0]},${t.before[1]})`), cell(AR_ACT[t.action], { bold: true }), cell(`(${t.after[0]},${t.after[1]})`), cell(String(t.reward), { color: t.reward > 0 ? "2EA05A" : "6B7280", bold: t.reward > 0 }), cell(t.q_chosen.toFixed(2), { color: "1F6F8B", bold: true })]);
+s.addTable([[hdr("الخطوة"), hdr("الموقع قبل"), hdr("الفعل المختار"), hdr("الموقع بعد"), hdr("المكافأة r"), hdr("Q للفعل المختار")]].concat(trRows),
+  { x: 0.6, y: 2.0, w: 7.6, colW: [0.9, 1.3, 1.5, 1.3, 1.2, 1.4], rowH: 0.5, border: { type: "solid", color: "C9D3DD", pt: 1 }, objectName: "EpisodeTable" });
+bullets(s, ["الخطوة 2: يلتقط الراكب فيتحوّل b من 0 إلى 1", "الخطوة 7: الإنزال عند الوجهة ينهي الحلقة بالمكافأة الكبرى", "تزداد Q كلما اقتربنا من الوجهة لأن المكافأة النهائية تصبح أقرب"], 8.5, 2.0, 4.25, 2.2, 16);
+s.addText("pickup: 15 − 1 = 14      dropoff: 100 − 1 = 99", ltr({ x: 8.5, y: 4.15, w: 4.25, h: 0.4, fontSize: 14, bold: true, color: "E8743B" }));
+card(s, 8.5, 4.75, 4.25, 1.9, "0F2A3A", "CheckCard");
+s.addText("تحقّق يدوي من الجدول", rtl({ x: 8.7, y: 4.82, w: 3.9, h: 0.4, fontSize: 16, bold: true, color: "F2B705" }));
+s.addText([{ text: "Q7 = 99", options: { breakLine: true } }, { text: "Q6 = −1 + 0.95 × 99 = 93.05", options: { breakLine: true } }, { text: "Q5 = −1 + 0.95 × 93.05 = 87.40", options: {} }], ltr({ x: 8.7, y: 5.25, w: 3.9, h: 1.3, fontSize: 15, color: "FFFFFF", valign: "top" }));
+s.addNotes("هذه الأرقام من الجدول المدرَّب فعلًا (experiments/trace_episode.py). التحقق اليدوي يثبت أن الجدول وصل إلى القيم النظرية: Q = r + γ × Q التالية.");
+
+// 10c ── Backward propagation of values
+s = pres.addSlide({ masterName: "CONTENT" }); title(s, "كيف تنتشر القيمة إلى الخلف أثناء التدريب");
+s.addText("نبدأ من جدول أصفار ونكرّر المسار نفسه (للتوضيح فقط). كل مرور يحدّث الخطوات بالترتيب بمعادلة Q", rtl({ x: 0.6, y: 1.4, w: 12.1, h: 0.45, fontSize: 16, bold: true }));
+const snapKeys = Object.keys(TRACE.snapshots);
+const bpRows = TRACE.steps.map((t, i) => [cell(`${t.step}: ${AR_ACT[t.action]}`, { bold: true })].concat(snapKeys.map(k => cell(TRACE.snapshots[k][i].toFixed(2), { color: i == 6 ? "2EA05A" : "1B2430" }))).concat([cell(t.q_chosen.toFixed(2), { color: "1F6F8B", bold: true })]));
+s.addTable([[hdr("الخطوة والفعل")].concat(snapKeys.map(k => hdr("بعد " + k + (k == "1" ? " مرور" : " مرات")))).concat([hdr("المدرَّب")])].concat(bpRows),
+  { x: 0.6, y: 1.95, w: 8.1, colW: [1.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.4], rowH: 0.48, border: { type: "solid", color: "C9D3DD", pt: 1 }, objectName: "PropagationTable" });
+card(s, 8.95, 1.95, 3.8, 4.5, "F1F3F6", "WhyCard");
+s.addText([
+  { text: "لماذا تتحرك القيم بهذا الشكل؟", options: { bold: true, breakLine: true, color: "1F6F8B", fontSize: 17 } },
+  { text: "المرور 1: لا تعرف الخطوات الأخرى شيئًا بعد، فقط الإنزال يتغيّر إلى 9.9", options: { breakLine: true } },
+  { text: "المرور 2: الخطوة 6 ترى أن قيمة الحالة التالية صارت 9.9 فترتفع", options: { breakLine: true } },
+  { text: "المرور 3 وما بعده: يصل الأثر إلى الخطوات السابقة تدريجيًا حتى الخطوة الأولى", options: {} },
+], rtl({ x: 9.1, y: 2.05, w: 3.5, h: 4.3, fontSize: 15, paraSpaceAfter: 8 }));
+s.addText("مثالان من الجدول: الإنزال في المرور 1، والخطوة 6 في المرور 2", rtl({ x: 0.6, y: 5.85, w: 8.1, h: 0.35, fontSize: 15, bold: true }));
+s.addText("9.9 = 0.1 × (99 − 0)        0.75 = −0.1 + 0.1 × ( −1 + 0.95 × 9.9 + 0.1 )", ltr({ x: 0.6, y: 6.25, w: 8.1, h: 0.4, fontSize: 15, bold: true, color: "E8743B" }));
+s.addNotes("هذه هي فكرة الانتشار إلى الخلف: المكافأة النهائية +100 لا تصل إلى بداية المسار إلا بعد تكرار التحديث عبر عدد كبير من الحلقات. لذلك يحتاج الوكيل آلاف الحلقات.");
 
 // 11 ── Q growth
 s = pres.addSlide({ masterName: "CONTENT" }); title(s, "ماذا تعلّمت الأرقام فعلًا؟");
